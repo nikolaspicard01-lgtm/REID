@@ -1,5 +1,6 @@
 import streamlit as st
 import os
+import tempfile
 import time
 
 from utils.downloader import download_reel_audio
@@ -12,40 +13,18 @@ st.set_page_config(
     layout="wide",
 )
 
-
-def check_password():
-    """Password gate — only lets authenticated users through."""
-    if "authenticated" not in st.session_state:
-        st.session_state["authenticated"] = False
-
-    if st.session_state["authenticated"]:
-        return True
-
-    st.title("REID")
-    st.subheader("Enter password to continue")
-
-    password = st.text_input("Password", type="password")
-    if st.button("Login", type="primary"):
-        if password == st.secrets["app"]["password"]:
-            st.session_state["authenticated"] = True
-            st.rerun()
-        else:
-            st.error("Wrong password.")
-    return False
-
-
-if not check_password():
-    st.stop()
-
-# Pull API key from secrets
-api_key = st.secrets["api"]["claude_key"]
-
 st.markdown(
     """
     <style>
     .stApp {
         max-width: 1200px;
         margin: 0 auto;
+    }
+    .script-output {
+        background-color: #1E1E2E;
+        padding: 20px;
+        border-radius: 10px;
+        border: 1px solid #333;
     }
     </style>
     """,
@@ -55,17 +34,25 @@ st.markdown(
 st.title("REID")
 st.subheader("Paste a Facebook Reel. Get a viral script.")
 
+# API key in sidebar
 with st.sidebar:
-    st.header("How it works")
+    st.header("Settings")
+    api_key = st.text_input(
+        "Claude API Key",
+        type="password",
+        value=st.session_state.get("api_key", ""),
+        help="Your Anthropic API key",
+    )
+    if api_key:
+        st.session_state["api_key"] = api_key
+
+    st.divider()
+    st.markdown("**How it works:**")
     st.markdown("1. Paste a Facebook reel link")
     st.markdown("2. We download & transcribe it")
     st.markdown("3. AI extracts the core concept")
     st.markdown("4. AI writes a new original script")
     st.markdown("5. Copy your script & go")
-    st.divider()
-    if st.button("Logout"):
-        st.session_state["authenticated"] = False
-        st.rerun()
 
 # Initialize session state for history
 if "history" not in st.session_state:
@@ -80,7 +67,9 @@ url = st.text_input(
 generate_btn = st.button("Generate Script", type="primary", use_container_width=True)
 
 if generate_btn:
-    if not url:
+    if not api_key:
+        st.error("Please enter your Claude API key in the sidebar.")
+    elif not url:
         st.error("Please paste a Facebook reel URL.")
     else:
         progress = st.progress(0, text="Starting...")
