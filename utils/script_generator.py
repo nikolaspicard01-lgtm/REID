@@ -1,0 +1,131 @@
+import anthropic
+
+CONCEPT_EXTRACTION_PROMPT = """Analyze this transcript from a Facebook reel and extract:
+
+1. **Core Concept**: What is the central idea/hook of this story?
+2. **Conflict Type**: What kind of conflict drives it? (betrayal, power imbalance, hidden identity, etc.)
+3. **Emotional Arc**: What emotions does it take the viewer through?
+4. **Target Hook**: What makes this concept compelling for a female audience aged 35-65?
+5. **Key Themes**: List 3-5 themes present
+
+Be concise. This will be used to generate a NEW original script based on the same concept.
+
+TRANSCRIPT:
+{transcript}"""
+
+SCRIPT_GENERATION_PROMPT = """You are writing high-retention, emotionally driven vertical drama scripts designed for a female audience aged 35-65.
+
+Based on the following concept extracted from a viral reel, write a COMPLETELY NEW and ORIGINAL script that uses the same core concept but with different characters, settings, and plot.
+
+CONCEPT:
+{concept}
+
+RULES:
+
+These are 7-9 minute narrative stories built for mobile viewing, but every single piece must also be engineered to extract multiple viral 30-60 second clips.
+
+This is retention-first storytelling. If the story is ever "calm," "slow," or "comfortable," it is wrong.
+
+CORE PRINCIPLE: Every minute must earn its place.
+
+Each minute must include at least one of:
+- A hook (new tension introduced)
+- A twist (new information that reframes what we thought)
+- A gap (a question left unanswered)
+- A red herring (misdirection that creates curiosity)
+- Emotional escalation (stakes getting higher)
+
+OPENING (FIRST 3-5 SECONDS):
+Start in the middle of tension. No setup. No exposition.
+Examples: An accusation mid-sentence, a betrayal already happening, a shocking line that raises immediate questions.
+The viewer must feel: "Wait... what is going on here?"
+
+STRUCTURE (7-9 MINUTES):
+
+Minute 0-1: Immediate conflict. No context. Drop us into chaos.
+Minute 1-3: Layer information while increasing confusion or suspicion. Introduce characters through conflict, not explanation.
+Minute 3-5: First major twist. What the viewer thought was happening is incomplete or wrong.
+Minute 5-7: Escalation. Raise stakes emotionally. Add at least one red herring.
+Minute 7-9: Payoff and reversal. Truth revealed publicly. Justice is visible and public.
+
+End with: "They got exactly what they deserved."
+
+CHARACTER DYNAMICS:
+- Focus on relationships that create natural tension (mother-in-law vs partner, best friend betrayal, hidden identity, power imbalance)
+- Protagonist must be underestimated
+- Antagonist must feel real, not evil for no reason
+
+EMOTIONAL ENGINE:
+Build: Frustration -> curiosity -> outrage -> satisfaction
+Justice must be visible and preferably public. Public vindication is powerful.
+
+DIALOGUE STYLE:
+- Short and sharp lines
+- Use interruption, tension, and subtext
+- Characters should not say everything — leave gaps
+
+VIRAL CLIP ENGINEERING:
+Mark 3-5 moments with [CLIP START] and [CLIP END] tags. These moments must:
+- Start with tension immediately
+- Contain a mini-arc (setup -> twist -> reaction)
+- End with a question or reveal
+
+RETENTION RULES:
+- No filler scenes
+- No repetitive dialogue
+- No "safe" middle sections
+- Every scene must reveal, escalate, or mislead
+
+FORMAT YOUR OUTPUT AS:
+
+## TITLE
+[Script title]
+
+## LOGLINE
+[One-sentence hook]
+
+## SCRIPT
+[The full script with scene descriptions in brackets, dialogue labeled by character name, and [CLIP START]/[CLIP END] markers]
+
+## CLIP BREAKDOWN
+[List each clip-able moment with timestamps and a one-line description]
+
+Tone: grounded, emotional, slightly heightened reality.
+Style: fast-paced, tension-driven, addictive.
+Goal: make it impossible to scroll away."""
+
+
+def extract_concept(transcript: str, api_key: str) -> str:
+    """Extract the core concept from a transcript using Claude."""
+    client = anthropic.Anthropic(api_key=api_key)
+
+    message = client.messages.create(
+        model="claude-sonnet-4-20250514",
+        max_tokens=1024,
+        messages=[
+            {
+                "role": "user",
+                "content": CONCEPT_EXTRACTION_PROMPT.format(transcript=transcript),
+            }
+        ],
+    )
+
+    return message.content[0].text
+
+
+def generate_script(concept: str, api_key: str) -> str:
+    """Generate a new script based on the extracted concept using Claude."""
+    client = anthropic.Anthropic(api_key=api_key)
+
+    message = client.messages.create(
+        model="claude-sonnet-4-20250514",
+        max_tokens=8192,
+        messages=[
+            {
+                "role": "user",
+                "content": SCRIPT_GENERATION_PROMPT.format(concept=concept),
+            }
+        ],
+    )
+
+    return message.content[0].text
