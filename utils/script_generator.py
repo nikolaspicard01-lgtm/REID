@@ -76,7 +76,7 @@ RETENTION RULES:
 - No "safe" middle sections
 - Every scene must reveal, escalate, or mislead
 
-FORMAT YOUR OUTPUT AS:
+FORMAT YOUR OUTPUT IN PROPER SCREENPLAY FORMAT:
 
 ## TITLE
 [Script title]
@@ -85,10 +85,37 @@ FORMAT YOUR OUTPUT AS:
 [One-sentence hook]
 
 ## SCRIPT
-[The full script with scene descriptions in brackets, dialogue labeled by character name, and [CLIP START]/[CLIP END] markers]
+
+Use standard screenplay formatting:
+- Scene headings: INT. or EXT. followed by LOCATION - TIME (all caps)
+- Character names: centered, ALL CAPS before their dialogue
+- Dialogue: indented under character name
+- Action/description lines: full width, present tense
+- Parentheticals: (whispered), (beat), (into phone) etc. under character name before dialogue
+- Mark viral clip moments with [CLIP START] and [CLIP END] on their own lines
+
+Example format:
+
+INT. RESTAURANT - NIGHT
+
+A crowded upscale restaurant. ELENA (42) sits across from her husband MARK (45), who keeps glancing at his phone.
+
+[CLIP START]
+
+ELENA
+(calm, dangerous)
+Who is she?
+
+MARK
+What are you talking about?
+
+ELENA
+The woman you just texted "I love you" to. While sitting across from your wife.
+
+[CLIP END]
 
 ## CLIP BREAKDOWN
-[List each clip-able moment with timestamps and a one-line description]
+[List each clip-able moment with a one-line description]
 
 Tone: grounded, emotional, slightly heightened reality.
 Style: fast-paced, tension-driven, addictive.
