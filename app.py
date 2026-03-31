@@ -1,23 +1,12 @@
 import streamlit as st
 import os
 import time
-import json
 
 from utils.downloader import download_reel_audio
 from utils.transcriber import transcribe_audio
 from utils.script_generator import extract_concept, generate_script, revise_script
 from utils.pdf_export import parse_script_to_pdf
 from utils.profile_scraper import scrape_profile_reels, format_duration, format_views
-
-# Default profiles to monitor
-DEFAULT_PROFILES = [
-    {
-        "name": "DramatizeMe",
-        "url": "https://www.facebook.com/dramatizeme",
-    },
-]
-
-PROFILES_FILE = "watched_profiles.json"
 
 st.set_page_config(
     page_title="ABXStudio - Reel to Script",
@@ -36,6 +25,7 @@ st.markdown(
         background: #0a0a0a;
     }
 
+    /* Header */
     .reid-header {
         text-align: center;
         padding: 3rem 0 0.5rem 0;
@@ -69,6 +59,7 @@ st.markdown(
         margin: 1.5rem auto;
     }
 
+    /* Steps */
     .steps-container {
         display: flex;
         justify-content: center;
@@ -100,6 +91,7 @@ st.markdown(
         border: 1.5px solid currentColor;
     }
 
+    /* Script output */
     .script-container {
         background: #111111;
         border: 1px solid #222222;
@@ -111,6 +103,7 @@ st.markdown(
         color: #cccccc;
     }
 
+    /* Reel cards */
     .reel-card {
         background: #111111;
         border: 1px solid #222222;
@@ -122,10 +115,6 @@ st.markdown(
     .reel-card:hover {
         border-color: #ffffff;
         background: #161616;
-    }
-    .reel-card.selected {
-        border-color: #ffffff;
-        background: #1a1a1a;
     }
     .reel-title {
         font-family: 'Inter', sans-serif;
@@ -142,25 +131,8 @@ st.markdown(
     .reel-meta span {
         margin-right: 1.2rem;
     }
-    .reel-source {
-        font-family: 'Inter', sans-serif;
-        color: #444444;
-        font-size: 0.75rem;
-        margin-top: 0.2rem;
-    }
 
-    .profile-chip {
-        display: inline-block;
-        background: #161616;
-        border: 1px solid #333333;
-        border-radius: 20px;
-        padding: 0.4rem 1rem;
-        margin: 0.25rem;
-        font-family: 'Inter', sans-serif;
-        font-size: 0.85rem;
-        color: #cccccc;
-    }
-
+    /* Tabs */
     .stTabs [data-baseweb="tab-list"] {
         gap: 4px;
         justify-content: center;
@@ -183,6 +155,7 @@ st.markdown(
         border: none;
     }
 
+    /* Primary buttons */
     .stButton > button[kind="primary"] {
         background: #ffffff;
         color: #000000;
@@ -202,6 +175,7 @@ st.markdown(
         box-shadow: 0 4px 20px rgba(255, 255, 255, 0.1);
     }
 
+    /* Secondary / other buttons */
     .stButton > button:not([kind="primary"]) {
         background: #161616;
         color: #cccccc;
@@ -217,6 +191,7 @@ st.markdown(
         color: #ffffff;
     }
 
+    /* Download buttons */
     .stDownloadButton > button {
         background: #111111;
         border: 1px solid #333333;
@@ -232,6 +207,7 @@ st.markdown(
         color: #ffffff;
     }
 
+    /* Text input */
     .stTextInput > div > div > input {
         background: #111111;
         border: 1px solid #333333;
@@ -249,6 +225,7 @@ st.markdown(
         color: #555555;
     }
 
+    /* Text area */
     .stTextArea > div > div > textarea {
         background: #111111;
         border: 1px solid #333333;
@@ -261,29 +238,29 @@ st.markdown(
         box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.15);
     }
 
+    /* Progress bar */
     .stProgress > div > div > div > div {
         background: linear-gradient(90deg, #444444 0%, #ffffff 100%);
     }
 
+    /* Expander */
     .streamlit-expanderHeader {
         background: #111111;
         border-radius: 8px;
         font-family: 'Inter', sans-serif;
     }
 
+    /* Spinner */
     .stSpinner > div {
         border-top-color: #ffffff !important;
     }
 
-    .stCheckbox label span {
-        color: #cccccc !important;
-        font-family: 'Inter', sans-serif;
-    }
-
+    /* Hide Streamlit branding */
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
     header {visibility: hidden;}
 
+    /* Sidebar */
     .stSidebar {
         background: #0d0d0d;
         border-right: 1px solid #1a1a1a;
@@ -292,6 +269,7 @@ st.markdown(
         color: #999999;
     }
 
+    /* Divider */
     .custom-divider {
         height: 1px;
         background: linear-gradient(90deg, transparent, #333333, transparent);
@@ -306,6 +284,7 @@ st.markdown(
         margin-bottom: 1.5rem;
     }
 
+    /* Section headers */
     h3, .stMarkdown h3 {
         font-family: 'Inter', sans-serif;
         color: #ffffff;
@@ -313,6 +292,7 @@ st.markdown(
         letter-spacing: 0.02em;
     }
 
+    /* Labels */
     .stTextInput > label, .stTextArea > label {
         font-family: 'Inter', sans-serif;
         color: #888888;
@@ -320,6 +300,7 @@ st.markdown(
         letter-spacing: 0.02em;
     }
 
+    /* Success/Error/Warning */
     .stAlert {
         border-radius: 8px;
         font-family: 'Inter', sans-serif;
@@ -329,31 +310,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-
-# ── Profile management ──
-def load_profiles():
-    if "profiles" not in st.session_state:
-        st.session_state["profiles"] = list(DEFAULT_PROFILES)
-    return st.session_state["profiles"]
-
-
-def add_profile(name: str, url: str):
-    profiles = load_profiles()
-    # Avoid duplicates
-    for p in profiles:
-        if p["url"].rstrip("/") == url.rstrip("/"):
-            return
-    profiles.append({"name": name, "url": url})
-
-
-def remove_profile(url: str):
-    profiles = load_profiles()
-    st.session_state["profiles"] = [
-        p for p in profiles if p["url"].rstrip("/") != url.rstrip("/")
-    ]
-
-
-# ── Header ──
+# Header
 st.markdown(
     """
     <div class="reid-header">
@@ -365,7 +322,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# ── Sidebar ──
+# Sidebar
 with st.sidebar:
     st.markdown("### Settings")
     api_key = st.text_input(
@@ -378,45 +335,21 @@ with st.sidebar:
         st.session_state["api_key"] = api_key
 
     st.markdown("---")
-
-    # Manage watched profiles
-    st.markdown("### Watched Profiles")
-    profiles = load_profiles()
-
-    for p in profiles:
-        col_name, col_del = st.columns([4, 1])
-        with col_name:
-            st.markdown(
-                f"<div class='profile-chip'>{p['name']}</div>",
-                unsafe_allow_html=True,
-            )
-        with col_del:
-            if st.button("x", key=f"del_{p['url']}", help=f"Remove {p['name']}"):
-                remove_profile(p["url"])
-                st.rerun()
-
-    st.markdown("---")
-    st.markdown("**Add Profile**")
-    new_name = st.text_input("Name", placeholder="e.g. DramaPage", key="new_prof_name")
-    new_url = st.text_input(
-        "Facebook URL",
-        placeholder="https://www.facebook.com/pagename",
-        key="new_prof_url",
+    st.markdown("### How it works")
+    st.markdown(
+        """
+        **Browse Mode:** Paste a Facebook profile — we find their top reels for you to pick from.\n
+        **Direct Mode:** Paste a single reel link to generate a script instantly.\n
+        **Revise:** Not happy? Tell the AI what to change.
+        """
     )
-    if st.button("Add", use_container_width=True):
-        if new_name and new_url:
-            add_profile(new_name, new_url)
-            st.rerun()
-        else:
-            st.warning("Enter both a name and URL.")
-
     st.markdown("---")
     st.markdown(
         "<small style='color:#555555'>Scripts are in standard screenplay format, ready for actors and production.</small>",
         unsafe_allow_html=True,
     )
 
-# ── Session state ──
+# Session state
 if "history" not in st.session_state:
     st.session_state["history"] = []
 
@@ -427,6 +360,7 @@ def run_pipeline(reel_url: str):
     progress = st.progress(0)
 
     try:
+        # Step 1: Download
         status.markdown(
             '<div class="steps-container">'
             '<div class="step active"><div class="step-num">1</div> Downloading</div>'
@@ -440,6 +374,7 @@ def run_pipeline(reel_url: str):
         audio_path = download_reel_audio(reel_url)
         progress.progress(25)
 
+        # Step 2: Transcribe
         status.markdown(
             '<div class="steps-container">'
             '<div class="step done"><div class="step-num">✓</div> Downloaded</div>'
@@ -458,6 +393,7 @@ def run_pipeline(reel_url: str):
         except OSError:
             pass
 
+        # Step 3: Extract concept
         status.markdown(
             '<div class="steps-container">'
             '<div class="step done"><div class="step-num">✓</div> Downloaded</div>'
@@ -470,6 +406,7 @@ def run_pipeline(reel_url: str):
         concept = extract_concept(transcript, api_key)
         progress.progress(70)
 
+        # Step 4: Generate script
         status.markdown(
             '<div class="steps-container">'
             '<div class="step done"><div class="step-num">✓</div> Downloaded</div>'
@@ -482,6 +419,7 @@ def run_pipeline(reel_url: str):
         script = generate_script(concept, api_key)
         progress.progress(100)
 
+        # Done
         status.markdown(
             '<div class="steps-container">'
             '<div class="step done"><div class="step-num">✓</div> Downloaded</div>'
@@ -521,158 +459,91 @@ def run_pipeline(reel_url: str):
         return False
 
 
-# ══════════════════════════════════════
-# MAIN FLOW — Discover > Select > Generate
-# ══════════════════════════════════════
+# ── Mode Selection ──
+mode_browse, mode_direct = st.tabs(["Browse Profile", "Direct Link"])
 
-# Show watched profiles
-profiles = load_profiles()
-profile_names = ", ".join([p["name"] for p in profiles])
-
-st.markdown(
-    f'<div class="mode-description">Watching: {profile_names}</div>',
-    unsafe_allow_html=True,
-)
-
-# ── Step 1: Start Scanning ──
-col_l, col_m, col_r = st.columns([1, 2, 1])
-with col_m:
-    start_btn = st.button(
-        "Start Scanning", type="primary", use_container_width=True
-    )
-
-if start_btn:
-    if not api_key:
-        st.error("Enter your Claude API key in the sidebar.")
-    elif not profiles:
-        st.error("Add at least one profile in the sidebar.")
-    else:
-        all_reels = []
-        scan_status = st.empty()
-
-        for i, profile in enumerate(profiles):
-            scan_status.markdown(
-                f'<div class="mode-description">Scanning {profile["name"]} ({i + 1}/{len(profiles)})...</div>',
-                unsafe_allow_html=True,
-            )
-            try:
-                reels = scrape_profile_reels(profile["url"])
-                for reel in reels:
-                    reel["source"] = profile["name"]
-                all_reels.extend(reels)
-            except Exception as e:
-                st.warning(f"Could not scan {profile['name']}: {str(e)}")
-
-        scan_status.empty()
-
-        if all_reels:
-            # Sort all reels by views
-            all_reels.sort(key=lambda x: x["view_count"], reverse=True)
-            st.session_state["discovered_reels"] = all_reels
-            st.session_state["selected_reels"] = []
-        else:
-            st.warning(
-                "Could not find any reels. Facebook may be blocking access. "
-                "Try the Direct Link option below."
-            )
-
-# ── Step 2: Show discovered reels with checkboxes ──
-if "discovered_reels" in st.session_state and st.session_state["discovered_reels"]:
-    reels = st.session_state["discovered_reels"]
-
-    st.markdown('<div class="custom-divider"></div>', unsafe_allow_html=True)
-    st.markdown(f"### Top Reels Found ({len(reels)})")
+# ── Browse Profile Mode ──
+with mode_browse:
     st.markdown(
-        '<div class="mode-description">Select the reels you want to base new scripts on, then click Generate.</div>',
+        '<div class="mode-description">Paste a Facebook profile or page URL. We\'ll find their reels so you can pick the best ones.</div>',
         unsafe_allow_html=True,
     )
 
-    # Select all / none
-    col_sa, col_sn, col_spacer = st.columns([1, 1, 3])
-    with col_sa:
-        if st.button("Select All", use_container_width=True):
-            for idx in range(len(reels)):
-                st.session_state[f"reel_check_{idx}"] = True
-            st.rerun()
-    with col_sn:
-        if st.button("Clear All", use_container_width=True):
-            for idx in range(len(reels)):
-                st.session_state[f"reel_check_{idx}"] = False
-            st.rerun()
-
-    # List reels with checkboxes
-    for idx, reel in enumerate(reels):
-        col_check, col_info = st.columns([0.5, 5])
-
-        title = reel["title"][:70] if reel["title"] else "Untitled Reel"
-        views = format_views(reel["view_count"])
-        likes = format_views(reel["like_count"])
-        dur = format_duration(reel["duration"])
-        source = reel.get("source", "Unknown")
-
-        with col_check:
-            st.checkbox(
-                "sel",
-                key=f"reel_check_{idx}",
-                label_visibility="collapsed",
-            )
-
-        with col_info:
-            st.markdown(
-                f"""<div class="reel-card">
-                    <div class="reel-title">{idx + 1}. {title}</div>
-                    <div class="reel-meta">
-                        <span>Views: {views}</span>
-                        <span>Likes: {likes}</span>
-                        <span>Duration: {dur}</span>
-                    </div>
-                    <div class="reel-source">Source: {source}</div>
-                </div>""",
-                unsafe_allow_html=True,
-            )
-
-    # ── Step 3: Generate scripts for selected reels ──
-    st.markdown('<div class="custom-divider"></div>', unsafe_allow_html=True)
-
-    # Count selected
-    selected_indices = [
-        idx
-        for idx in range(len(reels))
-        if st.session_state.get(f"reel_check_{idx}", False)
-    ]
-    selected_count = len(selected_indices)
-
-    col_l, col_m, col_r = st.columns([1, 2, 1])
+    col_l, col_m, col_r = st.columns([1, 3, 1])
     with col_m:
-        generate_selected_btn = st.button(
-            f"Generate {selected_count} Script{'s' if selected_count != 1 else ''}",
-            type="primary",
-            use_container_width=True,
-            disabled=selected_count == 0,
+        profile_url = st.text_input(
+            "Facebook Profile URL",
+            placeholder="https://www.facebook.com/pagename",
+            key="profile_input",
+        )
+        scan_btn = st.button(
+            "Scan Reels", type="primary", use_container_width=True
         )
 
-    if generate_selected_btn and selected_count > 0:
-        for i, idx in enumerate(selected_indices):
-            reel = reels[idx]
-            st.markdown(f"---")
-            st.markdown(
-                f"**Script {i + 1}/{selected_count}** — {reel['title'][:50]}"
-            )
-            run_pipeline(reel["url"])
+    if scan_btn and profile_url:
+        if not api_key:
+            st.error("Enter your Claude API key in the sidebar.")
+        else:
+            with st.spinner("Scanning profile for reels... this may take a moment."):
+                reels = scrape_profile_reels(profile_url)
+                if reels:
+                    st.session_state["scraped_reels"] = reels
+                    st.session_state["profile_source"] = profile_url
+                else:
+                    st.warning(
+                        "Could not find reels from this profile. Facebook may be blocking access. "
+                        "Try using the **Direct Link** tab instead."
+                    )
 
-# ── Direct Link (fallback) ──
-st.markdown('<div class="custom-divider"></div>', unsafe_allow_html=True)
+    if "scraped_reels" in st.session_state and st.session_state["scraped_reels"]:
+        reels = st.session_state["scraped_reels"]
+        st.markdown(f"**Found {len(reels)} reels** — sorted by views (best first)")
+        st.markdown('<div class="custom-divider"></div>', unsafe_allow_html=True)
 
-with st.expander("Direct Link (paste a single reel URL)"):
-    url = st.text_input(
-        "Facebook Reel URL",
-        placeholder="https://www.facebook.com/reel/...",
-        label_visibility="collapsed",
-        key="direct_input",
+        for idx, reel in enumerate(reels):
+            col_info, col_action = st.columns([4, 1])
+
+            with col_info:
+                title = reel["title"][:80] if reel["title"] else "Untitled Reel"
+                views = format_views(reel["view_count"])
+                likes = format_views(reel["like_count"])
+                dur = format_duration(reel["duration"])
+
+                st.markdown(
+                    f"""<div class="reel-card">
+                        <div class="reel-title">{idx + 1}. {title}</div>
+                        <div class="reel-meta">
+                            <span>Views: {views}</span>
+                            <span>Likes: {likes}</span>
+                            <span>Duration: {dur}</span>
+                        </div>
+                    </div>""",
+                    unsafe_allow_html=True,
+                )
+
+            with col_action:
+                st.markdown("<br>", unsafe_allow_html=True)
+                if st.button("Script it", key=f"reel_{idx}", use_container_width=True):
+                    run_pipeline(reel["url"])
+
+# ── Direct Link Mode ──
+with mode_direct:
+    st.markdown(
+        '<div class="mode-description">Paste a single Facebook reel link to generate a script instantly.</div>',
+        unsafe_allow_html=True,
     )
-    generate_btn = st.button(
-        "Generate Script", type="primary", use_container_width=True, key="direct_gen"
-    )
+
+    col_l, col_m, col_r = st.columns([1, 3, 1])
+    with col_m:
+        url = st.text_input(
+            "Facebook Reel URL",
+            placeholder="https://www.facebook.com/reel/...",
+            label_visibility="collapsed",
+            key="direct_input",
+        )
+        generate_btn = st.button(
+            "Generate Script", type="primary", use_container_width=True
+        )
 
     if generate_btn:
         if not api_key:
@@ -754,9 +625,7 @@ if "current_script" in st.session_state:
         key=f"revision_input_{revision_count}",
     )
 
-    revise_btn = st.button(
-        "Revise Script", type="primary", use_container_width=True, key="revise_main"
-    )
+    revise_btn = st.button("Revise Script", type="primary", use_container_width=True)
 
     if revise_btn and feedback:
         with st.spinner("Revising your script..."):
