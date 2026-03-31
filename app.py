@@ -535,6 +535,7 @@ elif st.session_state["view"] == "scan":
         if "scan_profiles" not in st.session_state:
             st.session_state["scan_profiles"] = [
                 "https://www.facebook.com/dramatizeme",
+                "https://www.facebook.com/dharmannofficial",
             ]
 
         # Show current profiles
