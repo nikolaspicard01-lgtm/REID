@@ -3,6 +3,34 @@ import tempfile
 from fpdf import FPDF
 
 
+def sanitize_text(text: str) -> str:
+    """Replace Unicode characters that Courier can't render with ASCII equivalents."""
+    replacements = {
+        "\u2014": "--",   # em dash
+        "\u2013": "-",    # en dash
+        "\u2018": "'",    # left single quote
+        "\u2019": "'",    # right single quote
+        "\u201c": '"',    # left double quote
+        "\u201d": '"',    # right double quote
+        "\u2026": "...",  # ellipsis
+        "\u2022": "-",    # bullet
+        "\u00a0": " ",    # non-breaking space
+        "\u2032": "'",    # prime
+        "\u2033": '"',    # double prime
+        "\u00b7": "-",    # middle dot
+        "\u200b": "",     # zero-width space
+        "\u00e9": "e",    # e-acute
+        "\u00e8": "e",    # e-grave
+        "\u00e0": "a",    # a-grave
+        "\u2192": "->",   # right arrow
+    }
+    for char, replacement in replacements.items():
+        text = text.replace(char, replacement)
+    # Strip any remaining non-latin1 characters
+    text = text.encode("latin-1", errors="replace").decode("latin-1")
+    return text
+
+
 class ScreenplayPDF(FPDF):
     """PDF formatted like a proper screenplay."""
 
@@ -15,35 +43,34 @@ class ScreenplayPDF(FPDF):
     def title_page(self, title, logline=""):
         self.ln(80)
         self.set_font("Courier", "B", 24)
-        self.cell(0, 15, title.upper(), align="C", new_x="LMARGIN", new_y="NEXT")
+        self.cell(0, 15, sanitize_text(title.upper()), align="C", new_x="LMARGIN", new_y="NEXT")
         if logline:
             self.ln(10)
             self.set_font("Courier", "", 12)
-            self.multi_cell(0, 6, logline, align="C")
+            self.multi_cell(0, 6, sanitize_text(logline), align="C")
         self.add_page()
 
     def scene_heading(self, text):
         self.ln(4)
         self.set_font("Courier", "B", 12)
-        self.cell(0, 6, text.upper(), new_x="LMARGIN", new_y="NEXT")
+        self.cell(0, 6, sanitize_text(text.upper()), new_x="LMARGIN", new_y="NEXT")
         self.ln(2)
 
     def action_line(self, text):
         self.set_font("Courier", "", 12)
-        self.multi_cell(0, 6, text)
+        self.multi_cell(0, 6, sanitize_text(text))
         self.ln(2)
 
     def character_name(self, name):
         self.ln(2)
         self.set_font("Courier", "B", 12)
-        # Character names are centered (indented ~3.7in from left in standard screenplay)
-        self.cell(0, 6, name.upper(), align="C", new_x="LMARGIN", new_y="NEXT")
+        self.cell(0, 6, sanitize_text(name.upper()), align="C", new_x="LMARGIN", new_y="NEXT")
 
     def parenthetical(self, text):
         self.set_font("Courier", "I", 12)
         x_offset = 55
         self.set_x(x_offset)
-        self.cell(0, 6, f"({text})", new_x="LMARGIN", new_y="NEXT")
+        self.cell(0, 6, sanitize_text(f"({text})"), new_x="LMARGIN", new_y="NEXT")
 
     def dialogue(self, text):
         self.set_font("Courier", "", 12)
@@ -52,7 +79,7 @@ class ScreenplayPDF(FPDF):
         self.set_left_margin(left_margin)
         self.set_right_margin(right_margin)
         self.set_x(left_margin)
-        self.multi_cell(0, 6, text)
+        self.multi_cell(0, 6, sanitize_text(text))
         self.set_left_margin(25)
         self.set_right_margin(25)
         self.ln(1)
@@ -60,7 +87,7 @@ class ScreenplayPDF(FPDF):
     def clip_marker(self, text):
         self.set_font("Courier", "B", 10)
         self.set_text_color(180, 40, 40)
-        self.cell(0, 6, text, new_x="LMARGIN", new_y="NEXT")
+        self.cell(0, 6, sanitize_text(text), new_x="LMARGIN", new_y="NEXT")
         self.set_text_color(0, 0, 0)
 
 
