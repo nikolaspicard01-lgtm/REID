@@ -11,7 +11,7 @@ st.set_page_config(
     page_title="REID - Reel to Script",
     page_icon="🎬",
     layout="wide",
-    initial_sidebar_state="collapsed",
+    initial_sidebar_state="expanded",
 )
 
 # Custom CSS for a polished look
