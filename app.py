@@ -9,381 +9,338 @@ from utils.pdf_export import parse_script_to_pdf
 from utils.profile_scraper import scrape_profile_reels, format_duration, format_views
 
 st.set_page_config(
-    page_title="ABXStudio - Reel to Script",
+    page_title="ABXStudio",
     page_icon="ABX",
     layout="wide",
-    initial_sidebar_state="expanded",
+    initial_sidebar_state="collapsed",
 )
 
-# Custom CSS — ABXStudio black/white/grey brand
+# ── CSS ──
 st.markdown(
     """
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap');
 
-    .stApp {
-        background: #0a0a0a;
-    }
+    * { font-family: 'Inter', sans-serif; }
 
-    /* Header */
-    .reid-header {
+    .stApp { background: #000000; }
+
+    /* ── Welcome / API Key Screen ── */
+    .welcome {
         text-align: center;
-        padding: 3rem 0 0.5rem 0;
+        max-width: 480px;
+        margin: 8vh auto 0 auto;
     }
-    .reid-logo {
-        font-family: 'Inter', sans-serif;
-        font-size: 3.2rem;
+    .welcome-logo {
+        font-size: 2.8rem;
         font-weight: 900;
-        color: #ffffff;
-        letter-spacing: 0.25em;
-        margin-bottom: 0.3rem;
-        text-transform: uppercase;
-    }
-    .reid-logo span {
-        background: linear-gradient(180deg, #ffffff 0%, #666666 100%);
+        letter-spacing: 0.3em;
+        background: linear-gradient(180deg, #fff 0%, #555 100%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
+        margin-bottom: 0.5rem;
     }
-    .reid-tagline {
-        font-family: 'Inter', sans-serif;
-        color: #666666;
-        font-size: 1rem;
+    .welcome-sub {
+        color: #555;
+        font-size: 0.95rem;
         font-weight: 300;
-        letter-spacing: 0.15em;
+        letter-spacing: 0.12em;
         text-transform: uppercase;
+        margin-bottom: 3rem;
     }
-    .reid-divider {
-        width: 60px;
-        height: 2px;
-        background: linear-gradient(90deg, transparent, #ffffff, transparent);
-        margin: 1.5rem auto;
+    .welcome-label {
+        color: #666;
+        font-size: 0.8rem;
+        font-weight: 500;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        text-align: left;
+        margin-bottom: 0.5rem;
     }
 
-    /* Steps */
-    .steps-container {
+    /* ── Top bar ── */
+    .topbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 1.2rem 0;
+        border-bottom: 1px solid #1a1a1a;
+        margin-bottom: 2rem;
+    }
+    .topbar-logo {
+        font-size: 1.3rem;
+        font-weight: 800;
+        letter-spacing: 0.2em;
+        color: #fff;
+    }
+    .topbar-mode {
+        color: #555;
+        font-size: 0.8rem;
+        font-weight: 500;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+    }
+
+    /* ── Mode selector cards ── */
+    .mode-grid {
+        display: flex;
+        gap: 1.5rem;
+        max-width: 700px;
+        margin: 0 auto 2rem auto;
+    }
+    .mode-card {
+        flex: 1;
+        background: #0a0a0a;
+        border: 1px solid #222;
+        border-radius: 14px;
+        padding: 2rem 1.5rem;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    .mode-card:hover {
+        border-color: #fff;
+        background: #111;
+    }
+    .mode-icon {
+        font-size: 2rem;
+        margin-bottom: 0.8rem;
+    }
+    .mode-title {
+        color: #fff;
+        font-size: 1rem;
+        font-weight: 600;
+        margin-bottom: 0.4rem;
+    }
+    .mode-desc {
+        color: #555;
+        font-size: 0.82rem;
+        font-weight: 400;
+        line-height: 1.5;
+    }
+
+    /* ── Section header ── */
+    .section-header {
+        color: #fff;
+        font-size: 1.1rem;
+        font-weight: 600;
+        margin-bottom: 0.3rem;
+    }
+    .section-sub {
+        color: #555;
+        font-size: 0.85rem;
+        font-weight: 400;
+        margin-bottom: 1.5rem;
+    }
+
+    /* ── Reel cards ── */
+    .reel-card {
+        background: #0a0a0a;
+        border: 1px solid #1a1a1a;
+        border-radius: 10px;
+        padding: 1rem 1.2rem;
+        margin-bottom: 0.5rem;
+        transition: all 0.15s;
+    }
+    .reel-card:hover {
+        border-color: #444;
+        background: #0f0f0f;
+    }
+    .reel-rank {
+        color: #333;
+        font-size: 0.75rem;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        margin-bottom: 0.2rem;
+    }
+    .reel-title {
+        color: #ddd;
+        font-size: 0.92rem;
+        font-weight: 500;
+        margin-bottom: 0.3rem;
+        line-height: 1.4;
+    }
+    .reel-stats {
+        color: #444;
+        font-size: 0.78rem;
+        font-weight: 400;
+    }
+    .reel-stats span { margin-right: 1rem; }
+
+    /* ── Script output ── */
+    .script-box {
+        background: #0a0a0a;
+        border: 1px solid #1a1a1a;
+        border-radius: 12px;
+        padding: 2rem;
+        margin: 1rem 0;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 0.88rem;
+        line-height: 1.9;
+        color: #bbb;
+    }
+
+    /* ── Progress steps ── */
+    .psteps {
         display: flex;
         justify-content: center;
         gap: 2rem;
         margin: 2rem 0;
-        flex-wrap: wrap;
     }
-    .step {
+    .pstep {
         display: flex;
         align-items: center;
         gap: 0.5rem;
-        color: #444444;
-        font-family: 'Inter', sans-serif;
-        font-size: 0.85rem;
+        color: #333;
+        font-size: 0.82rem;
         font-weight: 500;
-        transition: color 0.3s;
     }
-    .step.active { color: #ffffff; }
-    .step.done { color: #888888; }
-    .step-num {
-        width: 28px;
-        height: 28px;
+    .pstep.on { color: #fff; }
+    .pstep.ok { color: #666; }
+    .pstep-dot {
+        width: 24px; height: 24px;
         border-radius: 50%;
         display: flex;
         align-items: center;
         justify-content: center;
-        font-weight: 600;
-        font-size: 0.8rem;
+        font-size: 0.7rem;
+        font-weight: 700;
         border: 1.5px solid currentColor;
     }
 
-    /* Script output */
-    .script-container {
-        background: #111111;
-        border: 1px solid #222222;
-        border-radius: 12px;
-        padding: 2rem;
-        margin: 1rem 0;
-        font-family: 'JetBrains Mono', 'Courier New', monospace;
-        line-height: 1.8;
-        color: #cccccc;
-    }
-
-    /* Reel cards */
-    .reel-card {
-        background: #111111;
-        border: 1px solid #222222;
-        border-radius: 10px;
-        padding: 1rem 1.2rem;
-        margin: 0.5rem 0;
-        transition: all 0.2s;
-    }
-    .reel-card:hover {
-        border-color: #ffffff;
-        background: #161616;
-    }
-    .reel-title {
-        font-family: 'Inter', sans-serif;
-        font-weight: 500;
-        color: #e0e0e0;
-        font-size: 0.95rem;
-        margin-bottom: 0.3rem;
-    }
-    .reel-meta {
-        font-family: 'Inter', sans-serif;
-        color: #666666;
-        font-size: 0.8rem;
-    }
-    .reel-meta span {
-        margin-right: 1.2rem;
-    }
-
-    /* Tabs */
-    .stTabs [data-baseweb="tab-list"] {
-        gap: 4px;
-        justify-content: center;
-        background: #111111;
-        border-radius: 10px;
-        padding: 4px;
-    }
-    .stTabs [data-baseweb="tab"] {
-        background-color: transparent;
-        border-radius: 8px;
-        padding: 8px 24px;
-        border: none;
-        color: #666666;
-        font-family: 'Inter', sans-serif;
-        font-weight: 500;
-    }
-    .stTabs [aria-selected="true"] {
-        background: #ffffff !important;
-        color: #000000 !important;
-        border: none;
-    }
-
-    /* Primary buttons */
-    .stButton > button[kind="primary"] {
-        background: #ffffff;
-        color: #000000;
-        border: none;
-        border-radius: 10px;
-        padding: 0.75rem 2rem;
-        font-family: 'Inter', sans-serif;
-        font-weight: 600;
-        font-size: 0.95rem;
-        letter-spacing: 0.05em;
-        text-transform: uppercase;
-        transition: all 0.2s;
-    }
-    .stButton > button[kind="primary"]:hover {
-        background: #e0e0e0;
-        transform: translateY(-1px);
-        box-shadow: 0 4px 20px rgba(255, 255, 255, 0.1);
-    }
-
-    /* Secondary / other buttons */
-    .stButton > button:not([kind="primary"]) {
-        background: #161616;
-        color: #cccccc;
-        border: 1px solid #333333;
-        border-radius: 8px;
-        font-family: 'Inter', sans-serif;
-        font-weight: 500;
-        transition: all 0.2s;
-    }
-    .stButton > button:not([kind="primary"]):hover {
-        background: #222222;
-        border-color: #ffffff;
-        color: #ffffff;
-    }
-
-    /* Download buttons */
-    .stDownloadButton > button {
-        background: #111111;
-        border: 1px solid #333333;
-        border-radius: 8px;
-        font-family: 'Inter', sans-serif;
-        font-weight: 500;
-        color: #cccccc;
-        transition: all 0.2s;
-    }
-    .stDownloadButton > button:hover {
-        background: #1a1a1a;
-        border-color: #ffffff;
-        color: #ffffff;
-    }
-
-    /* Text input */
-    .stTextInput > div > div > input {
-        background: #111111;
-        border: 1px solid #333333;
-        border-radius: 10px;
-        padding: 0.8rem 1rem;
-        font-family: 'Inter', sans-serif;
-        font-size: 1rem;
-        color: #e0e0e0;
-    }
-    .stTextInput > div > div > input:focus {
-        border-color: #ffffff;
-        box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.15);
-    }
-    .stTextInput > div > div > input::placeholder {
-        color: #555555;
-    }
-
-    /* Text area */
-    .stTextArea > div > div > textarea {
-        background: #111111;
-        border: 1px solid #333333;
-        border-radius: 10px;
-        font-family: 'Inter', sans-serif;
-        color: #e0e0e0;
-    }
-    .stTextArea > div > div > textarea:focus {
-        border-color: #ffffff;
-        box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.15);
-    }
-
-    /* Progress bar */
-    .stProgress > div > div > div > div {
-        background: linear-gradient(90deg, #444444 0%, #ffffff 100%);
-    }
-
-    /* Expander */
-    .streamlit-expanderHeader {
-        background: #111111;
-        border-radius: 8px;
-        font-family: 'Inter', sans-serif;
-    }
-
-    /* Spinner */
-    .stSpinner > div {
-        border-top-color: #ffffff !important;
-    }
-
-    /* Hide Streamlit branding */
-    #MainMenu {visibility: hidden;}
-    footer {visibility: hidden;}
-    header {visibility: hidden;}
-
-    /* Sidebar */
-    .stSidebar {
-        background: #0d0d0d;
-        border-right: 1px solid #1a1a1a;
-    }
-    .stSidebar .stMarkdown {
-        color: #999999;
-    }
-
-    /* Divider */
-    .custom-divider {
+    /* ── Divider ── */
+    .divider {
         height: 1px;
-        background: linear-gradient(90deg, transparent, #333333, transparent);
+        background: linear-gradient(90deg, transparent, #222, transparent);
         margin: 2.5rem 0;
     }
 
-    .mode-description {
-        color: #666666;
-        font-family: 'Inter', sans-serif;
-        font-size: 0.9rem;
-        text-align: center;
-        margin-bottom: 1.5rem;
+    /* ── Streamlit overrides ── */
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 4px; justify-content: center;
+        background: #0a0a0a; border-radius: 10px; padding: 4px;
+    }
+    .stTabs [data-baseweb="tab"] {
+        background: transparent; border-radius: 8px; padding: 8px 24px;
+        border: none; color: #555; font-weight: 500;
+    }
+    .stTabs [aria-selected="true"] {
+        background: #fff !important; color: #000 !important;
     }
 
-    /* Section headers */
-    h3, .stMarkdown h3 {
-        font-family: 'Inter', sans-serif;
-        color: #ffffff;
-        font-weight: 600;
-        letter-spacing: 0.02em;
+    .stButton > button[kind="primary"] {
+        background: #fff; color: #000; border: none;
+        border-radius: 10px; padding: 0.7rem 2rem;
+        font-weight: 600; font-size: 0.9rem;
+        letter-spacing: 0.06em; text-transform: uppercase;
+        transition: all 0.2s;
+    }
+    .stButton > button[kind="primary"]:hover {
+        background: #ddd; transform: translateY(-1px);
+        box-shadow: 0 4px 15px rgba(255,255,255,0.08);
     }
 
-    /* Labels */
+    .stButton > button:not([kind="primary"]) {
+        background: #0a0a0a; color: #aaa;
+        border: 1px solid #333; border-radius: 8px;
+        font-weight: 500; transition: all 0.2s;
+    }
+    .stButton > button:not([kind="primary"]):hover {
+        background: #151515; border-color: #fff; color: #fff;
+    }
+
+    .stDownloadButton > button {
+        background: #0a0a0a; border: 1px solid #222;
+        border-radius: 8px; color: #aaa; font-weight: 500;
+        transition: all 0.2s;
+    }
+    .stDownloadButton > button:hover {
+        border-color: #fff; color: #fff; background: #111;
+    }
+
+    .stTextInput > div > div > input,
+    .stTextArea > div > div > textarea {
+        background: #0a0a0a; border: 1px solid #222;
+        border-radius: 10px; padding: 0.8rem 1rem;
+        font-size: 0.95rem; color: #ddd;
+    }
+    .stTextInput > div > div > input:focus,
+    .stTextArea > div > div > textarea:focus {
+        border-color: #fff;
+        box-shadow: 0 0 0 1px rgba(255,255,255,0.1);
+    }
+    .stTextInput > div > div > input::placeholder { color: #444; }
+
+    .stProgress > div > div > div > div {
+        background: linear-gradient(90deg, #333, #fff);
+    }
+
+    .stCheckbox label span { color: #ccc !important; }
+
+    .streamlit-expanderHeader {
+        background: #0a0a0a; border-radius: 8px;
+    }
+
+    #MainMenu, footer, header { visibility: hidden; }
+
+    .stSidebar { background: #050505; border-right: 1px solid #111; }
+
+    h3 { color: #fff; font-weight: 600; letter-spacing: 0.02em; }
+
     .stTextInput > label, .stTextArea > label {
-        font-family: 'Inter', sans-serif;
-        color: #888888;
-        font-weight: 500;
-        letter-spacing: 0.02em;
+        color: #666; font-weight: 500; letter-spacing: 0.02em;
     }
 
-    /* Success/Error/Warning */
-    .stAlert {
-        border-radius: 8px;
-        font-family: 'Inter', sans-serif;
-    }
+    .stAlert { border-radius: 8px; }
     </style>
     """,
     unsafe_allow_html=True,
 )
 
-# Header
-st.markdown(
-    """
-    <div class="reid-header">
-        <div class="reid-logo"><span>ABXStudio</span></div>
-        <div class="reid-divider"></div>
-        <div class="reid-tagline">Reel to Script in One Click</div>
-    </div>
-    """,
-    unsafe_allow_html=True,
-)
 
-# Sidebar
-with st.sidebar:
-    st.markdown("### Settings")
-    api_key = st.text_input(
-        "Claude API Key",
-        type="password",
-        value=st.session_state.get("api_key", ""),
-        help="Your Anthropic API key",
-    )
-    if api_key:
-        st.session_state["api_key"] = api_key
-
-    st.markdown("---")
-    st.markdown("### How it works")
-    st.markdown(
-        """
-        **Browse Mode:** Paste a Facebook profile — we find their top reels for you to pick from.\n
-        **Direct Mode:** Paste a single reel link to generate a script instantly.\n
-        **Revise:** Not happy? Tell the AI what to change.
-        """
-    )
-    st.markdown("---")
-    st.markdown(
-        "<small style='color:#555555'>Scripts are in standard screenplay format, ready for actors and production.</small>",
-        unsafe_allow_html=True,
-    )
-
-# Session state
+# ══════════════════════════════════════════════
+# SESSION STATE
+# ══════════════════════════════════════════════
 if "history" not in st.session_state:
     st.session_state["history"] = []
+if "view" not in st.session_state:
+    st.session_state["view"] = "welcome"  # welcome | choose | paste | scan | results | script
 
 
+# ══════════════════════════════════════════════
+# PIPELINE
+# ══════════════════════════════════════════════
 def run_pipeline(reel_url: str):
-    """Run the full reel-to-script pipeline. Stores results in session state."""
+    api_key = st.session_state.get("api_key", "")
     status = st.empty()
     progress = st.progress(0)
 
     try:
-        # Step 1: Download
-        status.markdown(
-            '<div class="steps-container">'
-            '<div class="step active"><div class="step-num">1</div> Downloading</div>'
-            '<div class="step"><div class="step-num">2</div> Transcribing</div>'
-            '<div class="step"><div class="step-num">3</div> Analyzing</div>'
-            '<div class="step"><div class="step-num">4</div> Writing</div>'
-            "</div>",
-            unsafe_allow_html=True,
-        )
+        def show_step(step):
+            labels = ["Downloading", "Transcribing", "Analyzing", "Writing"]
+            html = '<div class="psteps">'
+            for i, label in enumerate(labels):
+                if i < step:
+                    cls = "ok"
+                    num = "✓"
+                elif i == step:
+                    cls = "on"
+                    num = str(i + 1)
+                else:
+                    cls = ""
+                    num = str(i + 1)
+                html += f'<div class="pstep {cls}"><div class="pstep-dot">{num}</div> {label}</div>'
+            html += "</div>"
+            status.markdown(html, unsafe_allow_html=True)
+
+        show_step(0)
         progress.progress(10)
         audio_path = download_reel_audio(reel_url)
         progress.progress(25)
 
-        # Step 2: Transcribe
-        status.markdown(
-            '<div class="steps-container">'
-            '<div class="step done"><div class="step-num">✓</div> Downloaded</div>'
-            '<div class="step active"><div class="step-num">2</div> Transcribing</div>'
-            '<div class="step"><div class="step-num">3</div> Analyzing</div>'
-            '<div class="step"><div class="step-num">4</div> Writing</div>'
-            "</div>",
-            unsafe_allow_html=True,
-        )
+        show_step(1)
         transcript = transcribe_audio(audio_path)
         progress.progress(50)
 
@@ -393,42 +350,15 @@ def run_pipeline(reel_url: str):
         except OSError:
             pass
 
-        # Step 3: Extract concept
-        status.markdown(
-            '<div class="steps-container">'
-            '<div class="step done"><div class="step-num">✓</div> Downloaded</div>'
-            '<div class="step done"><div class="step-num">✓</div> Transcribed</div>'
-            '<div class="step active"><div class="step-num">3</div> Analyzing</div>'
-            '<div class="step"><div class="step-num">4</div> Writing</div>'
-            "</div>",
-            unsafe_allow_html=True,
-        )
+        show_step(2)
         concept = extract_concept(transcript, api_key)
         progress.progress(70)
 
-        # Step 4: Generate script
-        status.markdown(
-            '<div class="steps-container">'
-            '<div class="step done"><div class="step-num">✓</div> Downloaded</div>'
-            '<div class="step done"><div class="step-num">✓</div> Transcribed</div>'
-            '<div class="step done"><div class="step-num">✓</div> Analyzed</div>'
-            '<div class="step active"><div class="step-num">4</div> Writing Script</div>'
-            "</div>",
-            unsafe_allow_html=True,
-        )
+        show_step(3)
         script = generate_script(concept, api_key)
         progress.progress(100)
 
-        # Done
-        status.markdown(
-            '<div class="steps-container">'
-            '<div class="step done"><div class="step-num">✓</div> Downloaded</div>'
-            '<div class="step done"><div class="step-num">✓</div> Transcribed</div>'
-            '<div class="step done"><div class="step-num">✓</div> Analyzed</div>'
-            '<div class="step done"><div class="step-num">✓</div> Complete</div>'
-            "</div>",
-            unsafe_allow_html=True,
-        )
+        show_step(4)
 
         pdf_bytes = parse_script_to_pdf(script)
 
@@ -437,142 +367,346 @@ def run_pipeline(reel_url: str):
         st.session_state["current_transcript"] = transcript
         st.session_state["current_pdf"] = pdf_bytes
         st.session_state["revision_count"] = 0
+        st.session_state["view"] = "script"
 
-        result = {
+        st.session_state["history"].insert(0, {
             "url": reel_url,
             "transcript": transcript,
             "concept": concept,
             "script": script,
             "pdf": pdf_bytes,
             "timestamp": time.strftime("%Y-%m-%d %H:%M"),
-        }
-        st.session_state["history"].insert(0, result)
+        })
 
-        time.sleep(0.8)
+        time.sleep(0.5)
         progress.empty()
-        return True
+        status.empty()
+        st.rerun()
 
     except Exception as e:
         progress.empty()
         status.empty()
         st.error(f"Something went wrong: {str(e)}")
-        return False
 
 
-# ── Mode Selection ──
-mode_browse, mode_direct = st.tabs(["Browse Profile", "Direct Link"])
-
-# ── Browse Profile Mode ──
-with mode_browse:
+# ══════════════════════════════════════════════
+# VIEW: WELCOME — API Key Entry
+# ══════════════════════════════════════════════
+if st.session_state["view"] == "welcome":
     st.markdown(
-        '<div class="mode-description">Paste a Facebook profile or page URL. We\'ll find their reels so you can pick the best ones.</div>',
+        """
+        <div class="welcome">
+            <div class="welcome-logo">ABXSTUDIO</div>
+            <div class="welcome-sub">Reel to Script Engine</div>
+        </div>
+        """,
         unsafe_allow_html=True,
     )
 
-    col_l, col_m, col_r = st.columns([1, 3, 1])
+    col_l, col_m, col_r = st.columns([1, 1.5, 1])
     with col_m:
-        profile_url = st.text_input(
-            "Facebook Profile URL",
-            placeholder="https://www.facebook.com/pagename",
-            key="profile_input",
+        st.markdown('<div class="welcome-label">Enter your API key to start</div>', unsafe_allow_html=True)
+        key_input = st.text_input(
+            "Claude API Key",
+            type="password",
+            placeholder="sk-ant-...",
+            label_visibility="collapsed",
         )
-        scan_btn = st.button(
-            "Scan Reels", type="primary", use_container_width=True
-        )
+        if st.button("Start", type="primary", use_container_width=True):
+            if key_input:
+                st.session_state["api_key"] = key_input
+                st.session_state["view"] = "choose"
+                st.rerun()
+            else:
+                st.error("Please enter your Claude API key.")
 
-    if scan_btn and profile_url:
-        if not api_key:
-            st.error("Enter your Claude API key in the sidebar.")
-        else:
-            with st.spinner("Scanning profile for reels... this may take a moment."):
-                reels = scrape_profile_reels(profile_url)
-                if reels:
-                    st.session_state["scraped_reels"] = reels
-                    st.session_state["profile_source"] = profile_url
-                else:
-                    st.warning(
-                        "Could not find reels from this profile. Facebook may be blocking access. "
-                        "Try using the **Direct Link** tab instead."
-                    )
 
-    if "scraped_reels" in st.session_state and st.session_state["scraped_reels"]:
-        reels = st.session_state["scraped_reels"]
-        st.markdown(f"**Found {len(reels)} reels** — sorted by views (best first)")
-        st.markdown('<div class="custom-divider"></div>', unsafe_allow_html=True)
-
-        for idx, reel in enumerate(reels):
-            col_info, col_action = st.columns([4, 1])
-
-            with col_info:
-                title = reel["title"][:80] if reel["title"] else "Untitled Reel"
-                views = format_views(reel["view_count"])
-                likes = format_views(reel["like_count"])
-                dur = format_duration(reel["duration"])
-
-                st.markdown(
-                    f"""<div class="reel-card">
-                        <div class="reel-title">{idx + 1}. {title}</div>
-                        <div class="reel-meta">
-                            <span>Views: {views}</span>
-                            <span>Likes: {likes}</span>
-                            <span>Duration: {dur}</span>
-                        </div>
-                    </div>""",
-                    unsafe_allow_html=True,
-                )
-
-            with col_action:
-                st.markdown("<br>", unsafe_allow_html=True)
-                if st.button("Script it", key=f"reel_{idx}", use_container_width=True):
-                    run_pipeline(reel["url"])
-
-# ── Direct Link Mode ──
-with mode_direct:
+# ══════════════════════════════════════════════
+# VIEW: CHOOSE MODE
+# ══════════════════════════════════════════════
+elif st.session_state["view"] == "choose":
+    # Top bar
     st.markdown(
-        '<div class="mode-description">Paste a single Facebook reel link to generate a script instantly.</div>',
+        '<div class="topbar">'
+        '<div class="topbar-logo">ABXSTUDIO</div>'
+        '<div class="topbar-mode">Choose Mode</div>'
+        "</div>",
         unsafe_allow_html=True,
     )
 
-    col_l, col_m, col_r = st.columns([1, 3, 1])
+    st.markdown(
+        """
+        <div style="text-align:center; margin-bottom: 2rem;">
+            <div class="section-header">What would you like to do?</div>
+            <div class="section-sub">Choose how you want to find your next script</div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    col_l, col_a, col_b, col_r = st.columns([1, 2, 2, 1])
+
+    with col_a:
+        st.markdown(
+            """
+            <div class="mode-card">
+                <div class="mode-icon">&#9654;</div>
+                <div class="mode-title">Paste a Reel</div>
+                <div class="mode-desc">Got a specific reel? Paste the link and we'll create a new script from it.</div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+        if st.button("Paste a Reel", type="primary", use_container_width=True, key="btn_paste"):
+            st.session_state["view"] = "paste"
+            st.rerun()
+
+    with col_b:
+        st.markdown(
+            """
+            <div class="mode-card">
+                <div class="mode-icon">&#128269;</div>
+                <div class="mode-desc">Scan Facebook profiles for the best performing reels, then pick your favorites.</div>
+                <div class="mode-title">Scan Profiles</div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+        if st.button("Scan Profiles", type="primary", use_container_width=True, key="btn_scan"):
+            st.session_state["view"] = "scan"
+            st.rerun()
+
+
+# ══════════════════════════════════════════════
+# VIEW: PASTE A REEL
+# ══════════════════════════════════════════════
+elif st.session_state["view"] == "paste":
+    st.markdown(
+        '<div class="topbar">'
+        '<div class="topbar-logo">ABXSTUDIO</div>'
+        '<div class="topbar-mode">Paste a Reel</div>'
+        "</div>",
+        unsafe_allow_html=True,
+    )
+
+    if st.button("< Back", key="back_paste"):
+        st.session_state["view"] = "choose"
+        st.rerun()
+
+    col_l, col_m, col_r = st.columns([1, 2, 1])
     with col_m:
+        st.markdown('<div class="section-header">Paste your Facebook reel link</div>', unsafe_allow_html=True)
+        st.markdown('<div class="section-sub">We\'ll transcribe it and create a brand new script based on the same concept.</div>', unsafe_allow_html=True)
+
         url = st.text_input(
-            "Facebook Reel URL",
+            "Reel URL",
             placeholder="https://www.facebook.com/reel/...",
             label_visibility="collapsed",
-            key="direct_input",
         )
-        generate_btn = st.button(
-            "Generate Script", type="primary", use_container_width=True
+        if st.button("Generate Script", type="primary", use_container_width=True):
+            if url:
+                run_pipeline(url)
+            else:
+                st.error("Paste a reel URL above.")
+
+
+# ══════════════════════════════════════════════
+# VIEW: SCAN PROFILES
+# ══════════════════════════════════════════════
+elif st.session_state["view"] == "scan":
+    st.markdown(
+        '<div class="topbar">'
+        '<div class="topbar-logo">ABXSTUDIO</div>'
+        '<div class="topbar-mode">Scan Profiles</div>'
+        "</div>",
+        unsafe_allow_html=True,
+    )
+
+    if st.button("< Back", key="back_scan"):
+        st.session_state["view"] = "choose"
+        st.rerun()
+
+    col_l, col_m, col_r = st.columns([1, 2, 1])
+    with col_m:
+        st.markdown('<div class="section-header">Facebook profiles to scan</div>', unsafe_allow_html=True)
+        st.markdown('<div class="section-sub">Add the profiles you want to monitor. We\'ll find their best reels.</div>', unsafe_allow_html=True)
+
+        # Default profiles
+        if "scan_profiles" not in st.session_state:
+            st.session_state["scan_profiles"] = [
+                "https://www.facebook.com/dramatizeme",
+            ]
+
+        # Show current profiles
+        profiles = st.session_state["scan_profiles"]
+        for i, p in enumerate(profiles):
+            col_url, col_del = st.columns([5, 1])
+            with col_url:
+                st.markdown(
+                    f'<div class="reel-card"><div class="reel-title">{p}</div></div>',
+                    unsafe_allow_html=True,
+                )
+            with col_del:
+                if st.button("Remove", key=f"rm_prof_{i}"):
+                    st.session_state["scan_profiles"].pop(i)
+                    st.rerun()
+
+        # Add new profile
+        new_prof = st.text_input(
+            "Add profile URL",
+            placeholder="https://www.facebook.com/pagename",
+            key="new_profile_url",
         )
+        if st.button("Add Profile", use_container_width=True):
+            if new_prof:
+                st.session_state["scan_profiles"].append(new_prof.strip())
+                st.rerun()
 
-    if generate_btn:
-        if not api_key:
-            st.error("Enter your Claude API key in the sidebar.")
-        elif not url:
-            st.error("Paste a Facebook reel URL above.")
-        else:
-            run_pipeline(url)
+        st.markdown('<div class="divider"></div>', unsafe_allow_html=True)
+
+        if st.button("Scan All Profiles", type="primary", use_container_width=True):
+            all_reels = []
+            scan_msg = st.empty()
+
+            for i, profile_url in enumerate(st.session_state["scan_profiles"]):
+                scan_msg.markdown(
+                    f'<div class="section-sub">Scanning profile {i + 1} of {len(st.session_state["scan_profiles"])}...</div>',
+                    unsafe_allow_html=True,
+                )
+                try:
+                    reels = scrape_profile_reels(profile_url)
+                    for r in reels:
+                        r["source"] = profile_url.rstrip("/").split("/")[-1]
+                    all_reels.extend(reels)
+                except Exception as e:
+                    st.warning(f"Could not scan {profile_url}: {e}")
+
+            scan_msg.empty()
+
+            if all_reels:
+                all_reels.sort(key=lambda x: x["view_count"], reverse=True)
+                st.session_state["discovered_reels"] = all_reels
+                st.session_state["view"] = "results"
+                st.rerun()
+            else:
+                st.error("No reels found. Facebook may be blocking access.")
 
 
-# ── Display Current Script ──
-if "current_script" in st.session_state:
+# ══════════════════════════════════════════════
+# VIEW: SCAN RESULTS — Pick reels
+# ══════════════════════════════════════════════
+elif st.session_state["view"] == "results":
+    st.markdown(
+        '<div class="topbar">'
+        '<div class="topbar-logo">ABXSTUDIO</div>'
+        '<div class="topbar-mode">Select Reels</div>'
+        "</div>",
+        unsafe_allow_html=True,
+    )
+
+    if st.button("< Back to Profiles", key="back_results"):
+        st.session_state["view"] = "scan"
+        st.rerun()
+
+    reels = st.session_state.get("discovered_reels", [])
+
+    st.markdown(f'<div class="section-header">Found {len(reels)} reels</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-sub">Select the ones you want to turn into scripts, then hit Generate.</div>', unsafe_allow_html=True)
+
+    # Select all / clear
+    col_sa, col_cl, col_sp = st.columns([1, 1, 4])
+    with col_sa:
+        if st.button("Select All", use_container_width=True):
+            for i in range(len(reels)):
+                st.session_state[f"pick_{i}"] = True
+            st.rerun()
+    with col_cl:
+        if st.button("Clear All", use_container_width=True):
+            for i in range(len(reels)):
+                st.session_state[f"pick_{i}"] = False
+            st.rerun()
+
+    # Reel list
+    for idx, reel in enumerate(reels):
+        col_check, col_info = st.columns([0.4, 5])
+
+        title = (reel["title"][:70] + "...") if reel["title"] and len(reel["title"]) > 70 else (reel["title"] or "Untitled")
+        views = format_views(reel["view_count"])
+        likes = format_views(reel["like_count"])
+        dur = format_duration(reel["duration"])
+        source = reel.get("source", "")
+
+        with col_check:
+            st.checkbox("s", key=f"pick_{idx}", label_visibility="collapsed")
+
+        with col_info:
+            st.markdown(
+                f"""<div class="reel-card">
+                    <div class="reel-rank">#{idx + 1} &middot; {source}</div>
+                    <div class="reel-title">{title}</div>
+                    <div class="reel-stats">
+                        <span>{views} views</span>
+                        <span>{likes} likes</span>
+                        <span>{dur}</span>
+                    </div>
+                </div>""",
+                unsafe_allow_html=True,
+            )
+
+    # Generate button
+    selected = [i for i in range(len(reels)) if st.session_state.get(f"pick_{i}", False)]
+    count = len(selected)
+
+    st.markdown('<div class="divider"></div>', unsafe_allow_html=True)
+
+    col_l, col_m, col_r = st.columns([1, 2, 1])
+    with col_m:
+        if st.button(
+            f"Generate {count} Script{'s' if count != 1 else ''}" if count > 0 else "Select reels above",
+            type="primary",
+            use_container_width=True,
+            disabled=count == 0,
+        ):
+            for i, idx in enumerate(selected):
+                reel = reels[idx]
+                st.markdown(f'<div class="section-sub">Generating script {i + 1} of {count}...</div>', unsafe_allow_html=True)
+                run_pipeline(reel["url"])
+
+
+# ══════════════════════════════════════════════
+# VIEW: SCRIPT OUTPUT
+# ══════════════════════════════════════════════
+elif st.session_state["view"] == "script":
+    st.markdown(
+        '<div class="topbar">'
+        '<div class="topbar-logo">ABXSTUDIO</div>'
+        '<div class="topbar-mode">Your Script</div>'
+        "</div>",
+        unsafe_allow_html=True,
+    )
+
+    col_back, col_new = st.columns([1, 1])
+    with col_back:
+        if st.button("< New Script", key="back_script"):
+            st.session_state["view"] = "choose"
+            # Clean up current script state
+            for key in ["current_script", "current_concept", "current_transcript", "current_pdf"]:
+                st.session_state.pop(key, None)
+            st.rerun()
+
     script = st.session_state["current_script"]
     pdf_bytes = st.session_state["current_pdf"]
 
-    st.markdown('<div class="custom-divider"></div>', unsafe_allow_html=True)
-
+    # Tabs: Script / Concept / Transcript
     tab_script, tab_concept, tab_transcript = st.tabs(
         ["Screenplay", "Concept Analysis", "Original Transcript"]
     )
 
     with tab_script:
-        st.markdown(
-            f'<div class="script-container">{script}</div>',
-            unsafe_allow_html=True,
-        )
+        st.markdown(f'<div class="script-box">{script}</div>', unsafe_allow_html=True)
 
-        dl_col1, dl_col2, dl_col3 = st.columns([1, 1, 1])
-        with dl_col1:
+        col1, col2, col3 = st.columns(3)
+        with col1:
             st.download_button(
                 "Download PDF",
                 pdf_bytes,
@@ -580,17 +714,17 @@ if "current_script" in st.session_state:
                 mime="application/pdf",
                 use_container_width=True,
             )
-        with dl_col2:
+        with col2:
             st.download_button(
-                "Download Script (.txt)",
+                "Download .txt",
                 script,
                 file_name="abxstudio_screenplay.txt",
                 mime="text/plain",
                 use_container_width=True,
             )
-        with dl_col3:
+        with col3:
             st.download_button(
-                "Download Markdown",
+                "Download .md",
                 script,
                 file_name="abxstudio_screenplay.md",
                 mime="text/markdown",
@@ -602,78 +736,74 @@ if "current_script" in st.session_state:
 
     with tab_transcript:
         st.text_area(
-            "Original Transcript",
+            "transcript",
             st.session_state.get("current_transcript", ""),
             height=250,
             label_visibility="collapsed",
         )
 
-    # Revision section
-    st.markdown('<div class="custom-divider"></div>', unsafe_allow_html=True)
-    st.markdown("### Revise Script")
-    st.markdown(
-        "<span style='color:#666666'>Not happy with something? Tell the AI what to change.</span>",
-        unsafe_allow_html=True,
-    )
+    # ── Revise ──
+    st.markdown('<div class="divider"></div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-header">Revise Script</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-sub">Not happy with something? Tell the AI what to change.</div>', unsafe_allow_html=True)
 
     revision_count = st.session_state.get("revision_count", 0)
+    api_key = st.session_state.get("api_key", "")
 
     feedback = st.text_area(
-        "What would you like to change?",
-        placeholder="e.g. Make the twist more dramatic, change the setting to a hospital, make the antagonist more subtle...",
+        "feedback",
+        placeholder="e.g. Make the twist bigger, change setting to a hospital, add more tension in the middle...",
         height=100,
-        key=f"revision_input_{revision_count}",
+        label_visibility="collapsed",
+        key=f"rev_{revision_count}",
     )
 
-    revise_btn = st.button("Revise Script", type="primary", use_container_width=True)
+    if st.button("Revise Script", type="primary", use_container_width=True, key="revise_btn"):
+        if feedback:
+            with st.spinner("Revising..."):
+                try:
+                    revised = revise_script(script, feedback, api_key)
+                    revised_pdf = parse_script_to_pdf(revised)
+                    st.session_state["current_script"] = revised
+                    st.session_state["current_pdf"] = revised_pdf
+                    st.session_state["revision_count"] = revision_count + 1
+                    if st.session_state["history"]:
+                        st.session_state["history"][0]["script"] = revised
+                        st.session_state["history"][0]["pdf"] = revised_pdf
+                    st.rerun()
+                except Exception as e:
+                    st.error(f"Revision failed: {str(e)}")
+        else:
+            st.warning("Type your feedback above.")
 
-    if revise_btn and feedback:
-        with st.spinner("Revising your script..."):
-            try:
-                revised = revise_script(script, feedback, api_key)
-                revised_pdf = parse_script_to_pdf(revised)
 
-                st.session_state["current_script"] = revised
-                st.session_state["current_pdf"] = revised_pdf
-                st.session_state["revision_count"] = revision_count + 1
-
-                if st.session_state["history"]:
-                    st.session_state["history"][0]["script"] = revised
-                    st.session_state["history"][0]["pdf"] = revised_pdf
-
-                st.rerun()
-            except Exception as e:
-                st.error(f"Revision failed: {str(e)}")
-    elif revise_btn and not feedback:
-        st.warning("Type your feedback above before clicking Revise.")
-
-# ── History ──
-if st.session_state["history"]:
-    st.markdown('<div class="custom-divider"></div>', unsafe_allow_html=True)
+# ══════════════════════════════════════════════
+# HISTORY (shown on script view and choose view)
+# ══════════════════════════════════════════════
+if st.session_state["view"] in ("choose", "script") and st.session_state["history"]:
+    st.markdown('<div class="divider"></div>', unsafe_allow_html=True)
     st.markdown("### Previous Scripts")
 
     for i, item in enumerate(st.session_state["history"]):
-        with st.expander(f"**{item['timestamp']}** — {item['url'][:50]}..."):
+        with st.expander(f"{item['timestamp']} — {item['url'][:50]}..."):
             h_tab1, h_tab2 = st.tabs(["Screenplay", "Concept"])
             with h_tab1:
                 st.markdown(item["script"])
-                col1, col2 = st.columns(2)
-                with col1:
+                c1, c2 = st.columns(2)
+                with c1:
                     st.download_button(
-                        "Download PDF",
-                        item["pdf"],
-                        file_name=f"abxstudio_script_{i}.pdf",
+                        "PDF", item["pdf"],
+                        file_name=f"abx_script_{i}.pdf",
                         mime="application/pdf",
-                        key=f"pdf_{i}",
+                        key=f"hpdf_{i}",
                         use_container_width=True,
                     )
-                with col2:
+                with c2:
                     st.download_button(
-                        "Download .txt",
-                        item["script"],
-                        file_name=f"abxstudio_script_{i}.txt",
+                        ".txt", item["script"],
+                        file_name=f"abx_script_{i}.txt",
                         mime="text/plain",
-                        key=f"txt_{i}",
+                        key=f"htxt_{i}",
                         use_container_width=True,
                     )
             with h_tab2:
