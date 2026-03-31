@@ -156,3 +156,36 @@ def generate_script(concept: str, api_key: str) -> str:
     )
 
     return message.content[0].text
+
+
+REVISION_PROMPT = """You are revising a screenplay script based on user feedback.
+
+Here is the current script:
+
+{script}
+
+The user wants the following changes:
+
+{feedback}
+
+Rewrite the FULL script with these changes applied. Keep everything that works, only change what the user asked for. Maintain proper screenplay format (INT./EXT. headings, character names in caps, dialogue indented, [CLIP START]/[CLIP END] markers).
+
+Output the complete revised script in the same format as the original (## TITLE, ## LOGLINE, ## SCRIPT, ## CLIP BREAKDOWN)."""
+
+
+def revise_script(script: str, feedback: str, api_key: str) -> str:
+    """Revise an existing script based on user feedback."""
+    client = anthropic.Anthropic(api_key=api_key)
+
+    message = client.messages.create(
+        model="claude-sonnet-4-20250514",
+        max_tokens=8192,
+        messages=[
+            {
+                "role": "user",
+                "content": REVISION_PROMPT.format(script=script, feedback=feedback),
+            }
+        ],
+    )
+
+    return message.content[0].text

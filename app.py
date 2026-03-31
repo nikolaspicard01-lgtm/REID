@@ -4,7 +4,7 @@ import time
 
 from utils.downloader import download_reel_audio
 from utils.transcriber import transcribe_audio
-from utils.script_generator import extract_concept, generate_script
+from utils.script_generator import extract_concept, generate_script, revise_script
 from utils.pdf_export import parse_script_to_pdf
 
 st.set_page_config(
@@ -350,7 +350,14 @@ if generate_btn:
             # Generate PDF
             pdf_bytes = parse_script_to_pdf(script)
 
-            # Store result
+            # Store in session state for revision
+            st.session_state["current_script"] = script
+            st.session_state["current_concept"] = concept
+            st.session_state["current_transcript"] = transcript
+            st.session_state["current_pdf"] = pdf_bytes
+            st.session_state["revision_count"] = 0
+
+            # Store in history
             result = {
                 "url": url,
                 "transcript": transcript,
@@ -364,60 +371,104 @@ if generate_btn:
             time.sleep(0.8)
             progress.empty()
 
-            # Results
-            st.markdown('<div class="custom-divider"></div>', unsafe_allow_html=True)
-
-            tab_script, tab_concept, tab_transcript = st.tabs(
-                ["Screenplay", "Concept Analysis", "Original Transcript"]
-            )
-
-            with tab_script:
-                st.markdown(
-                    f'<div class="script-container">{script}</div>',
-                    unsafe_allow_html=True,
-                )
-
-                dl_col1, dl_col2, dl_col3 = st.columns([1, 1, 1])
-                with dl_col1:
-                    st.download_button(
-                        "Download PDF",
-                        pdf_bytes,
-                        file_name="reid_screenplay.pdf",
-                        mime="application/pdf",
-                        use_container_width=True,
-                    )
-                with dl_col2:
-                    st.download_button(
-                        "Download Script (.txt)",
-                        script,
-                        file_name="reid_screenplay.txt",
-                        mime="text/plain",
-                        use_container_width=True,
-                    )
-                with dl_col3:
-                    st.download_button(
-                        "Download Markdown",
-                        script,
-                        file_name="reid_screenplay.md",
-                        mime="text/markdown",
-                        use_container_width=True,
-                    )
-
-            with tab_concept:
-                st.markdown(concept)
-
-            with tab_transcript:
-                st.text_area(
-                    "Original Transcript",
-                    transcript,
-                    height=250,
-                    label_visibility="collapsed",
-                )
-
         except Exception as e:
             progress.empty()
             status.empty()
             st.error(f"Something went wrong: {str(e)}")
+
+# Display current script (persists across reruns for revision)
+if "current_script" in st.session_state:
+    script = st.session_state["current_script"]
+    pdf_bytes = st.session_state["current_pdf"]
+
+    st.markdown('<div class="custom-divider"></div>', unsafe_allow_html=True)
+
+    tab_script, tab_concept, tab_transcript = st.tabs(
+        ["Screenplay", "Concept Analysis", "Original Transcript"]
+    )
+
+    with tab_script:
+        st.markdown(
+            f'<div class="script-container">{script}</div>',
+            unsafe_allow_html=True,
+        )
+
+        dl_col1, dl_col2, dl_col3 = st.columns([1, 1, 1])
+        with dl_col1:
+            st.download_button(
+                "Download PDF",
+                pdf_bytes,
+                file_name="reid_screenplay.pdf",
+                mime="application/pdf",
+                use_container_width=True,
+            )
+        with dl_col2:
+            st.download_button(
+                "Download Script (.txt)",
+                script,
+                file_name="reid_screenplay.txt",
+                mime="text/plain",
+                use_container_width=True,
+            )
+        with dl_col3:
+            st.download_button(
+                "Download Markdown",
+                script,
+                file_name="reid_screenplay.md",
+                mime="text/markdown",
+                use_container_width=True,
+            )
+
+    with tab_concept:
+        st.markdown(st.session_state.get("current_concept", ""))
+
+    with tab_transcript:
+        st.text_area(
+            "Original Transcript",
+            st.session_state.get("current_transcript", ""),
+            height=250,
+            label_visibility="collapsed",
+        )
+
+    # Revision section
+    st.markdown('<div class="custom-divider"></div>', unsafe_allow_html=True)
+    st.markdown("### Revise Script")
+    st.markdown(
+        "<span style='color:#8892b0'>Not happy with something? Tell the AI what to change.</span>",
+        unsafe_allow_html=True,
+    )
+
+    revision_count = st.session_state.get("revision_count", 0)
+
+    feedback = st.text_area(
+        "What would you like to change?",
+        placeholder="e.g. Make the twist more dramatic, change the setting to a hospital, make the antagonist more subtle, add more tension in the middle...",
+        height=100,
+        key=f"revision_input_{revision_count}",
+    )
+
+    revise_btn = st.button("Revise Script", type="primary", use_container_width=True)
+
+    if revise_btn and feedback:
+        with st.spinner("Revising your script..."):
+            try:
+                revised = revise_script(script, feedback, api_key)
+                revised_pdf = parse_script_to_pdf(revised)
+
+                st.session_state["current_script"] = revised
+                st.session_state["current_pdf"] = revised_pdf
+                st.session_state["revision_count"] = revision_count + 1
+
+                # Update the most recent history entry
+                if st.session_state["history"]:
+                    st.session_state["history"][0]["script"] = revised
+                    st.session_state["history"][0]["pdf"] = revised_pdf
+
+                st.rerun()
+            except Exception as e:
+                st.error(f"Revision failed: {str(e)}")
+    elif revise_btn and not feedback:
+        st.warning("Type your feedback above before clicking Revise.")
 
 # History section
 if st.session_state["history"]:
