@@ -117,6 +117,43 @@ The woman you just texted "I love you" to. While sitting across from your wife.
 ## CLIP BREAKDOWN
 [List each clip-able moment with a one-line description]
 
+## CASTING BREAKDOWN
+
+For EACH character in the script, provide the following structured breakdown:
+
+**[CHARACTER NAME] ([Role: Lead/Supporting/Featured Extra])**
+
+**Age:** [age range]
+**Gender:** [gender]
+**Height:** Any
+**Physical Appearance:** [2-3 sentences describing how the character should look, their energy, and what they should convey visually]
+
+**Description:** [Detailed paragraph about the character's arc, emotional range required, key acting moments, and what makes the role challenging. Include specific emotional beats they must hit, comfort with any physical/intimate scenes, and the overall transformation they undergo.]
+
+**H/M/W:** [Overall wardrobe and styling approach across the shoot — describe the general look and how it evolves]
+
+Then list day-by-day wardrobe/styling for each shooting day the character appears in:
+- **DAY X (Scene Y):** [Specific wardrobe, hair, and makeup for that day]
+- **SERIES OF SHOTS:** (if applicable) sub-bullet each day
+
+---
+
+## PROPS LIST
+
+[Bulleted list of EVERY prop mentioned or implied in the script. Include:
+- Character-specific items (medical equipment, phones, documents, etc.)
+- Food and drink items
+- Furniture and set dressing that characters interact with
+- Insert shots (phone screens, documents, etc.)
+- Any item a character picks up, uses, or references]
+
+## LOCATION LIST
+
+For each scene, list:
+
+**SCENE X: [Full scene heading from script]**
+- [One-line description of what happens in this scene]
+
 Tone: grounded, emotional, slightly heightened reality.
 Style: fast-paced, tension-driven, addictive.
 Goal: make it impossible to scroll away."""
@@ -146,7 +183,7 @@ def generate_script(concept: str, api_key: str) -> str:
 
     message = client.messages.create(
         model="claude-sonnet-4-20250514",
-        max_tokens=8192,
+        max_tokens=16384,
         messages=[
             {
                 "role": "user",
@@ -170,7 +207,7 @@ The user wants the following changes:
 
 Rewrite the FULL script with these changes applied. Keep everything that works, only change what the user asked for. Maintain proper screenplay format (INT./EXT. headings, character names in caps, dialogue indented, [CLIP START]/[CLIP END] markers).
 
-Output the complete revised script in the same format as the original (## TITLE, ## LOGLINE, ## SCRIPT, ## CLIP BREAKDOWN)."""
+Output the complete revised script in the same format as the original (## TITLE, ## LOGLINE, ## SCRIPT, ## CLIP BREAKDOWN, ## CASTING BREAKDOWN, ## PROPS LIST, ## LOCATION LIST)."""
 
 
 def revise_script(script: str, feedback: str, api_key: str) -> str:
@@ -179,7 +216,7 @@ def revise_script(script: str, feedback: str, api_key: str) -> str:
 
     message = client.messages.create(
         model="claude-sonnet-4-20250514",
-        max_tokens=8192,
+        max_tokens=16384,
         messages=[
             {
                 "role": "user",

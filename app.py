@@ -5,7 +5,16 @@ import time
 from utils.downloader import download_reel_audio
 from utils.transcriber import transcribe_audio
 from utils.script_generator import extract_concept, generate_script, revise_script
-from utils.pdf_export import parse_script_to_pdf
+from utils.pdf_export import (
+    parse_script_to_pdf,
+    parse_casting_to_pdf,
+    parse_clip_breakdown_to_pdf,
+    parse_clip_breakdown_to_docx,
+    extract_props_list,
+    extract_casting_breakdown,
+    extract_clip_breakdown,
+    extract_location_list,
+)
 from utils.profile_scraper import scrape_profile_reels, format_duration, format_views
 
 st.set_page_config(
@@ -361,11 +370,17 @@ def run_pipeline(reel_url: str):
         show_step(4)
 
         pdf_bytes = parse_script_to_pdf(script)
+        casting_pdf_bytes = parse_casting_to_pdf(script)
+        clip_pdf_bytes = parse_clip_breakdown_to_pdf(script)
+        clip_docx_bytes = parse_clip_breakdown_to_docx(script)
 
         st.session_state["current_script"] = script
         st.session_state["current_concept"] = concept
         st.session_state["current_transcript"] = transcript
         st.session_state["current_pdf"] = pdf_bytes
+        st.session_state["current_casting_pdf"] = casting_pdf_bytes
+        st.session_state["current_clip_pdf"] = clip_pdf_bytes
+        st.session_state["current_clip_docx"] = clip_docx_bytes
         st.session_state["revision_count"] = 0
         st.session_state["view"] = "script"
 
@@ -375,6 +390,9 @@ def run_pipeline(reel_url: str):
             "concept": concept,
             "script": script,
             "pdf": pdf_bytes,
+            "casting_pdf": casting_pdf_bytes,
+            "clip_pdf": clip_pdf_bytes,
+            "clip_docx": clip_docx_bytes,
             "timestamp": time.strftime("%Y-%m-%d %H:%M"),
         })
 
@@ -691,16 +709,19 @@ elif st.session_state["view"] == "script":
         if st.button("< New Script", key="back_script"):
             st.session_state["view"] = "choose"
             # Clean up current script state
-            for key in ["current_script", "current_concept", "current_transcript", "current_pdf"]:
+            for key in ["current_script", "current_concept", "current_transcript", "current_pdf", "current_casting_pdf", "current_clip_pdf", "current_clip_docx"]:
                 st.session_state.pop(key, None)
             st.rerun()
 
     script = st.session_state["current_script"]
     pdf_bytes = st.session_state["current_pdf"]
+    casting_pdf = st.session_state.get("current_casting_pdf")
+    clip_pdf = st.session_state.get("current_clip_pdf")
+    clip_docx = st.session_state.get("current_clip_docx")
 
-    # Tabs: Script / Concept / Transcript
-    tab_script, tab_concept, tab_transcript = st.tabs(
-        ["Screenplay", "Concept Analysis", "Original Transcript"]
+    # Tabs: Script / Clip Breakdown / Casting / Props / Concept / Transcript
+    tab_script, tab_clips, tab_casting, tab_props, tab_concept, tab_transcript = st.tabs(
+        ["Screenplay", "Clip Breakdown", "Casting Breakdown", "Props List", "Concept Analysis", "Original Transcript"]
     )
 
     with tab_script:
@@ -731,6 +752,72 @@ elif st.session_state["view"] == "script":
                 mime="text/markdown",
                 use_container_width=True,
             )
+
+    with tab_clips:
+        clip_text = extract_clip_breakdown(script)
+        if clip_text:
+            st.markdown(clip_text)
+        else:
+            st.info("No clip breakdown found in the generated script.")
+
+        st.markdown('<div class="divider"></div>', unsafe_allow_html=True)
+        st.markdown('<div class="section-sub">Download Clip Breakdown</div>', unsafe_allow_html=True)
+
+        col_cp, col_cd = st.columns(2)
+        with col_cp:
+            if clip_pdf:
+                st.download_button(
+                    "Download PDF",
+                    clip_pdf,
+                    file_name="abxstudio_clip_breakdown.pdf",
+                    mime="application/pdf",
+                    use_container_width=True,
+                    key="clip_pdf_dl",
+                )
+        with col_cd:
+            if clip_docx:
+                st.download_button(
+                    "Download DOCX",
+                    clip_docx,
+                    file_name="abxstudio_clip_breakdown.docx",
+                    mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                    use_container_width=True,
+                    key="clip_docx_dl",
+                )
+
+    with tab_casting:
+        casting_text = extract_casting_breakdown(script)
+        if casting_text:
+            st.markdown(casting_text)
+        else:
+            st.info("No casting breakdown found in the generated script.")
+
+        # Location list
+        location_text = extract_location_list(script)
+        if location_text:
+            st.markdown('<div class="divider"></div>', unsafe_allow_html=True)
+            st.markdown("### Location List")
+            st.markdown(location_text)
+
+        st.markdown('<div class="divider"></div>', unsafe_allow_html=True)
+        st.markdown('<div class="section-sub">Download Casting Breakdown</div>', unsafe_allow_html=True)
+
+        if casting_pdf:
+            st.download_button(
+                "Download Casting Breakdown PDF",
+                casting_pdf,
+                file_name="abxstudio_casting_breakdown.pdf",
+                mime="application/pdf",
+                use_container_width=True,
+                key="casting_pdf_dl",
+            )
+
+    with tab_props:
+        props_text = extract_props_list(script)
+        if props_text:
+            st.markdown(props_text)
+        else:
+            st.info("No props list found in the generated script.")
 
     with tab_concept:
         st.markdown(st.session_state.get("current_concept", ""))
@@ -765,12 +852,21 @@ elif st.session_state["view"] == "script":
                 try:
                     revised = revise_script(script, feedback, api_key)
                     revised_pdf = parse_script_to_pdf(revised)
+                    revised_casting_pdf = parse_casting_to_pdf(revised)
+                    revised_clip_pdf = parse_clip_breakdown_to_pdf(revised)
+                    revised_clip_docx = parse_clip_breakdown_to_docx(revised)
                     st.session_state["current_script"] = revised
                     st.session_state["current_pdf"] = revised_pdf
+                    st.session_state["current_casting_pdf"] = revised_casting_pdf
+                    st.session_state["current_clip_pdf"] = revised_clip_pdf
+                    st.session_state["current_clip_docx"] = revised_clip_docx
                     st.session_state["revision_count"] = revision_count + 1
                     if st.session_state["history"]:
                         st.session_state["history"][0]["script"] = revised
                         st.session_state["history"][0]["pdf"] = revised_pdf
+                        st.session_state["history"][0]["casting_pdf"] = revised_casting_pdf
+                        st.session_state["history"][0]["clip_pdf"] = revised_clip_pdf
+                        st.session_state["history"][0]["clip_docx"] = revised_clip_docx
                     st.rerun()
                 except Exception as e:
                     st.error(f"Revision failed: {str(e)}")
